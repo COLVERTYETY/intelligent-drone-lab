@@ -10,6 +10,12 @@ add_action_files(
   FILES Averaging.action
   FILES Machine.action
   FILES Lidar.action
+  FILES MoveTo.action
+)
+
+add_service_files(
+  FILES
+  killMotors.srv
 )
 
 generate_messages(

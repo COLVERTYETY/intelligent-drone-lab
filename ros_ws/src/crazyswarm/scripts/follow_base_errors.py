@@ -53,9 +53,9 @@ def callback(cf_of_interest):
 
 
 def listener():
-    #rospy.init_node('follow_me_now', anonymous=True) # this is a maybe
+    rospy.init_node('follow_me_now', anonymous=True) # this is a maybe
     rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, callback)
-    #rospy.spin()
+    rospy.spin()
     #timeHelper.sleep(1.5)
 	#plt.show(block=False)
 

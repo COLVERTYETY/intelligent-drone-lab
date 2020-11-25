@@ -24,7 +24,7 @@ class GestureDrone:
 
     def __init__(self, cf):
         self.cf = cf
-        self.velocity = 0.75
+        self.velocity = 0.1
         self.ang_velocity = 120
         self.takeoff_height = 0.5
 
@@ -40,7 +40,7 @@ class GestureDrone:
         print ('RIGHT to move right!')
         print ('LEFT to move left!')
         print ('FIST emergency STOP')
-        print('THUMBUP to go on follow mode')
+        print('PEACE to go on follow mode')
         self.cf.takeoff(targetHeight=self.takeoff_height, duration=3.0)
         
         self.listener()
@@ -50,7 +50,13 @@ class GestureDrone:
 
     def signal_callback(self, msg):
         print(msg.data)
-        if msg.data == 'THUMBUP': #Activate followMODE
+
+        
+        while abs(self.cf.position()[0])>1.0 or abs(self.cf.position()[1])>1.0 or abs(self.cf.position()[0])>1.0:
+            print ("go home now")
+
+        #print (self.cf.position())
+        if msg.data == 'PEACE': #Activate followMODE
             print ("followMode ACTIVATED")
             self.followMode=True
 
@@ -103,9 +109,12 @@ class GestureDrone:
 
     def slide_callback(self, msg):
         print(msg.data)
+        print (self.cf.position()[0])
         if self.followMode == True :
 
             if msg.data == 'SLIDE RIGHT' :#start_right
+                #pos = self.cf.position() + np.array([0, -0.05, 0])
+                #self.cf.goTo(pos, yawRate=0)
                 self.cf.cmdVelocityWorld(np.array([0, -self.velocity, 0]), yawRate=0)
 
             if msg.data == 'SLIDE LEFT' :#start_left
@@ -115,11 +124,10 @@ class GestureDrone:
                
                 self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity]), yawRate=0)
                 
-
             if msg.data == 'SLIDE DOWN': #start_down
                 
                 self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity]), yawRate=0)
-                self.cf.land(0.05, duration=1.0)
+                #self.cf.land(0.05, duration=1.0)
 
             if msg.data == 'FIST':
                 self.cf.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
@@ -129,6 +137,7 @@ class GestureDrone:
         handsignal_subscriber = rospy.Subscriber('/hand/signal', String, self.signal_callback)
         handslide_subscriber = rospy.Subscriber('/hand/direction', String, self.slide_callback)
         #cf.cmdVelocityWorld(np.array([self.velocity, 0, 0]), yawRate=0)
+        
         rospy.spin()
 
 

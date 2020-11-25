@@ -4,9 +4,16 @@ mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 import rospy
 from std_msgs.msg import String
+import sys
+import signal
+from collections import deque
+import statistics 
+from statistics import mode#, multimode 
 
 
 
+def signal_handler(signal, frame):
+	sys.exit(0)
 
 ### Functions
 def recognizeHandGesture(landmarks):
@@ -196,6 +203,21 @@ def getStructuredLandmarks(landmarks):
 #recognizedHandGesture = recognizeHandGesture(getStructuredLandmarks(test_landmarks_data))
 #print("recognized hand gesture: ", recognizedHandGesture) # print: "recognized hand gesture: 5"
 
+def addToQueueAndAverage(d, image):
+    
+    d.append(image)
+
+    #print("queue", d)
+    #print ("len", len(d))
+    if len(d) == 10:
+      #print ("getting rid of ", d.popleft())
+      try:
+        #print ("average: ", mode(d))
+        return(mode(d))
+      except:
+        return('')
+    else:
+      return('')
 
 def execute():
     print("execute")
@@ -225,20 +247,27 @@ def execute():
       
 
       if results.multi_hand_landmarks:
-        print("results")
+        #print("results")
         
         for hand_landmarks in results.multi_hand_landmarks: 
           mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-        text = recognizeHandGesture(results.multi_hand_landmarks[0])
-        #handsignal = String()
-        handsignal = text
-        handsignal_publisher.publish(handsignal)  
 
-        #Get Slide
-        text2,memo = isSliding(results.multi_hand_landmarks[0],memo)[0],isSliding(results.multi_hand_landmarks[0],memo)[1]
+        
+        #Get Signal: average signal. works.
+        image_signal = recognizeHandGesture(results.multi_hand_landmarks[0])
+        video_signal = addToQueueAndAverage(d_signal, image_signal)
+        #print("video_signal: ", video_signal)
+        text = video_signal
+        handsignal_publisher.publish(text)  
+
+        #Get Slide: should be based on pose with goTo().
+        image_slide,memo = isSliding(results.multi_hand_landmarks[0],memo)[0],isSliding(results.multi_hand_landmarks[0],memo)[1]
+        video_slide = addToQueueAndAverage(d_slide, image_slide)
+        #print("video_slide: ", video_slide)
         #handslide = String()
-        handslide = text2
-        handslide_publisher.publish(handslide) 
+
+        text2 = video_slide
+        handslide_publisher.publish(text2) 
 
 
         print("z : "+str(results.multi_hand_landmarks[0].landmark[0].z))
@@ -254,6 +283,8 @@ def execute():
     hands.close()
     cap.release()
 
+signal.signal(signal.SIGINT, signal_handler)
+
 if __name__ == '__main__':
     try:
         #Testing our function
@@ -261,7 +292,9 @@ if __name__ == '__main__':
         handsignal_publisher = rospy.Publisher('/hand/signal', String, queue_size=10)
         handslide_publisher = rospy.Publisher('/hand/direction', String, queue_size=10)
         handforward_publisher = rospy.Publisher('/hand/forward', String, queue_size=10)
-
+        global d_signal, d_slide 
+        d_signal = deque([], 10)
+        d_slide = deque([], 10)
         execute()
 
     except rospy.ROSInterruptException: pass

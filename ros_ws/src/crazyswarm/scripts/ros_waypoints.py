@@ -21,6 +21,14 @@ from math import pow, atan2, sqrt
 def signal_handler(signal, frame):
 	sys.exit(0)
 
+class States(Enum):
+    #MANUAL = 0
+    #ARMING = 1
+    TAKEOFF = 2
+    WAYPOINT = 3
+    #LANDING = 4
+    #DISARMING = 5
+
 class ArenaFlyer(object):
 
     def __init__(self, name):
@@ -32,11 +40,15 @@ class ArenaFlyer(object):
         # when a message of type Pose is received.
         #self.ttl1_subscriber = rospy.Subscriber('/turtle1/pose',
         #                                                Pose, self.update_pose1)
-
+        """ CALLBACKS """
         self.cf2_subscriber = rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, self.cf2_callback)
         self.cf2_pose = Point()
 
         self.success = False
+        self.local_waypoints = [[0.5, 0.0, 0.5], [0.5, 0.5, 0.5], [0.0, 0.5, 0.5], [0.0, 0.0, 0.5]]
+
+        """ INITIAL STATE """
+        self.flight_state = States.TAKEOFF
 
         self._feedback = actionlib_tutorials.msg.FibonacciFeedback()
         self._result = actionlib_tutorials.msg.FibonacciResult()
@@ -86,25 +98,44 @@ class ArenaFlyer(object):
 
         # start executing the action
         # x = TurtleBot()
+        if self.flight_state == States.TAKEOFF:
+            for cf in self.allcfs.crazyflies:
+                print(cf.id)
+                cf.takeoff(0.5, 5.0)
+            #     Z = 0.0
+            # while Z < 1.0:
+            #    pos = np.array([0, 0, Z])
+            #        cf.goTo(pos, yaw=0, duration=0.5)
+            #    #timeHelper.sleep(0.1)
+            #    Z += 0.05
+                if self._as.is_preempt_requested():
+                    rospy.loginfo('%s: Preempted' % self._action_name)
+                    self._as.set_preempted()
+                    success = False
+                    break
 
-        for cf in self.allcfs.crazyflies:
-            print(cf.id)
-            cf.takeoff(0.5, 5.0)
-        #     Z = 0.0
-	    # while Z < 1.0:
-		#    pos = np.array([0, 0, Z])
-	    #        cf.goTo(pos, yaw=0, duration=0.5)
-		#    #timeHelper.sleep(0.1)
-		#    Z += 0.05
-            if self._as.is_preempt_requested():
-                rospy.loginfo('%s: Preempted' % self._action_name)
-                self._as.set_preempted()
-                success = False
-                break
+
+                #now we test if he has reached the desired point.
+            self.takeoff_transition()
+
+        if self.flight_state == States.WAYPOINT:
+
+            self.waypoint_transition()
+
+            for cf in self.allcfs.crazyflies:
+                print(cf.id)
+                cf.goTo(self.target_position, 5.0)
 
 
-            #now we test if he has reached the desired point.
-        self.takeoff_transition()
+                if self._as.is_preempt_requested():
+                    rospy.loginfo('%s: Preempted' % self._action_name)
+                    self._as.set_preempted()
+                    success = False
+                    break
+
+
+                #now we test if he has reached the desired point.
+            self.takeoff_transition()
 
 
         if self.success == False:
@@ -153,8 +184,23 @@ class ArenaFlyer(object):
 
         if self.euclidean_distance(goal) < distance_tolerance:
             self.success = True
-            print("success is", self.success)
+        
+        print("takeoff done?", self.success)
             #return success
+
+    def waypoint_transition(self):
+        distance_tolerance = 0.1
+
+
+        while self.euclidean_distance(self.target_position) >= distance_tolerance:
+            self.success = False
+
+        if self.euclidean_distance(self.target_position) < distance_tolerance:
+            self.success = True
+            self.target_position = self.local_waypoints.pop(0)
+
+        print("waypoint done?", self.success)
+        
 
 signal.signal(signal.SIGINT, signal_handler)
 
