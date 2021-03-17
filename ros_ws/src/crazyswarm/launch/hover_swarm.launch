@@ -65,11 +65,16 @@
   <!-- RVIZ TO CHECK DRONE COORDINATES -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find crazyswarm)/launch/test.rviz"/>
 
+
   <!-- VIDEO RECORDING VIA CAMERA IN ARENA -txa -->
-  <node name="recording" pkg="crazyswarm" type="launch-recording.sh" />
+  <!-- <node name="recording" pkg="crazyswarm" type="launch-recording.sh" /> -->
 
   <!-- CURRENTLY TWO PLOTS, MORE TO COME -txa  
   <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_x" args="/cf2/log1/values[0]"/> 
   <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_roll" args="/cf1/log1/values[2] /cf1/log1/values[3]"/> 
   -->
+
+  <!-- SET UP THE CENTRAL DRONE SERVER AND EXTEND IT TO ANY 3 DRONES
+  <include file="3_drones_server.launch" /> -->
+
 </launch>

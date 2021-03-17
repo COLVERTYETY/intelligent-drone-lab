@@ -1,12 +1,19 @@
 
 #!/usr/bin/env python
 
+#Code initiated by txa on 20 October 2020
+#Comments added on 27 January 2021
+#Saved under https://github.com/ThomasCarstens/cfScripts/blob/master/dvic_demo.py
+#Some more explanations at txa-tuto: https://github.com/ThomasCarstens/txa-dvic-projects-tutos/tree/main/Behaviour%20Planning%20with%20ROS
+
 import numpy as np
 
 from pycrazyswarm import *
 import uav_trajectory
 
 import keyboard
+
+
 
 def fly():
     for i in range(TRIALS):
@@ -31,11 +38,17 @@ def fly():
 	timeHelper.sleep(3.0)
 
 def fly_two_drones():
-    for i in range(TRIALS):
-        allcfs.crazyflies[0].takeoff(targetHeight=0.5, duration=3.0)
-        allcfs.crazyflies[1].takeoff(targetHeight=0.2, duration=3.0)
 
-        timeHelper.sleep(2.5)
+    allcfs.crazyflies[0].takeoff(targetHeight=0.5, duration=3.0)
+    allcfs.crazyflies[1].takeoff(targetHeight=0.5, duration=3.0)
+
+    for i in range(TRIALS):
+        #allcfs.crazyflies[0].takeoff(targetHeight=0.5, duration=3.0)
+        #allcfs.crazyflies[1].takeoff(targetHeight=0.5, duration=3.0)
+
+        #timeHelper.sleep(2.5)
+        print("press button to continue...")
+        swarm.input.waitUntilButtonPressed()
             #for cf in allcfs.crazyflies:
             #    pos = cf.position() + np.array([0, 0, 1.0])
             #    cf.goTo(pos, 0, 2.0)
@@ -47,11 +60,30 @@ def fly_two_drones():
             #timeHelper.sleep(traj1.duration * TIMESCALE + 2.0)
         timeHelper.sleep(1.0)
 
+
+def fly_three_drones():
+
+    allcfs.crazyflies[0].takeoff(targetHeight=0.5, duration=3.0)
+    allcfs.crazyflies[1].takeoff(targetHeight=0.5, duration=3.0)
+    allcfs.crazyflies[2].takeoff(targetHeight=0.5, duration=3.0)
+    for i in range(TRIALS):
+        #allcfs.crazyflies[0].takeoff(targetHeight=0.5, duration=3.0)
+        #allcfs.crazyflies[1].takeoff(targetHeight=0.5, duration=3.0)
+
+        #timeHelper.sleep(2.5)
         print("press button to continue...")
         swarm.input.waitUntilButtonPressed()
-
-        allcfs.land(targetHeight=0.06, duration=2.0)
-        timeHelper.sleep(3.0)
+            #for cf in allcfs.crazyflies:
+            #    pos = cf.position() + np.array([0, 0, 1.0])
+            #    cf.goTo(pos, 0, 2.0)
+            #timeHelper.sleep(2.5)
+        #allcfs.crazyflies[0].startTrajectory(0, timescale=TIMESCALE)
+        allcfs.crazyflies[0].startTrajectory(0, timescale=TIMESCALE)
+        allcfs.crazyflies[1].startTrajectory(0, timescale=TIMESCALE)
+        allcfs.crazyflies[2].startTrajectory(0, timescale=TIMESCALE)
+        #allcfs.crazyflies[0].startTrajectory(0, timescale=TIMESCALE, reverse=True)
+        #timeHelper.sleep(traj1.duration * TIMESCALE + 2.0)
+        timeHelper.sleep(1.0)
 
 
 def fly_nostops():
@@ -97,7 +129,7 @@ if __name__ == "__main__":
 
     traj4 = uav_trajectory.Trajectory()
     traj4.loadcsv("helicoidale.csv")
- 
+
     rdev18_traj = uav_trajectory.Trajectory()
     rdev18_traj.loadcsv("demo_shapes/rdev_18deg.csv")
 
@@ -113,15 +145,25 @@ if __name__ == "__main__":
     demo = raw_input ("choose a demo: \n 0: xy figure of 8+circle \n 1: zx figure of 8 \n 2: semicircle(issues) \n 3: helicoidale\n 4: rdev18\n 5:ldev18\n 6:f8(xz)\n 7: keyboard ctrl\n 8: demo of the death \n demo:")
     #TRIALS = int(raw_input ("nb of repeats: ")
     #TIMESCALE = raw_input ("speed factor where 1 is max 1m/s, 1m/s2: ")
-  
+
     if demo == '0':
                 TRIALS = 1
                 TIMESCALE = 1
         #for i in range(TRIALS):
                 for cf in allcfs.crazyflies:
                         cf.uploadTrajectory(0, 0, traj0)
+                if nb_drones == "3":
+                	fly_three_drones()
+                        print("press button to continue...")
+                        swarm.input.waitUntilButtonPressed()
+                        allcfs.land(targetHeight=0.06, duration=2.0)
+                        timeHelper.sleep(3.0)
                 if nb_drones == "2":
                 	fly_two_drones()
+                        print("press button to continue...")
+                        swarm.input.waitUntilButtonPressed()
+                        allcfs.land(targetHeight=0.06, duration=2.0)
+                        timeHelper.sleep(3.0)
                 if nb_drones == "1":
                         fly()
 

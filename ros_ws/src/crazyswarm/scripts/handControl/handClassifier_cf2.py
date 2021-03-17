@@ -1,4 +1,4 @@
-import cv2
+from cv2 import cv2
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
@@ -8,9 +8,9 @@ import sys
 import signal
 from collections import deque
 import statistics
-from statistics import mode#, multimode
-
-
+from statistics import mode #, multimode
+import math
+from collections import Counter
 
 
 def signal_handler(signal, frame):
@@ -24,7 +24,7 @@ def recognizeHandGesture(landmarks):
   ringFingerState = 'UNKNOWN'
   littleFingerState = 'UNKNOWN'
 
-  recognizedHandGesture = None
+  recognizedHandGesture = ""
   pseudoFixKeyPoint = landmarks.landmark[2].y
   if (landmarks.landmark[3].y < pseudoFixKeyPoint and landmarks.landmark[4].y < landmarks.landmark[3].y and landmarks.landmark[4].y < landmarks.landmark[6].y ):
     thumbState = 'OPENUP'
@@ -147,8 +147,12 @@ def recognizeHandGesture(landmarks):
   if (middleFingerState == 'CLOSE' and indexFingerState == 'OPENUP' and ringFingerState == 'CLOSE' and littleFingerState == 'CLOSE' ):
     recognizedHandGesture ="INDEX"
 
-  if (thumbState=='CLOSE' and indexFingerState == 'CLOSE' and middleFingerState == 'CLOSE' and ringFingerState == 'CLOSE' and littleFingerState == 'CLOSE'):
+  if ( indexFingerState == 'CLOSE' and middleFingerState == 'CLOSE' and ringFingerState == 'CLOSE' and littleFingerState == 'CLOSE'):
     recognizedHandGesture = "FIST"
+
+  if (landmarks.landmark[8].y>landmarks.landmark[7].y and landmarks.landmark[8].y<landmarks.landmark[5].y and landmarks.landmark[12].y>landmarks.landmark[11].y and landmarks.landmark[12].y<landmarks.landmark[9].y and landmarks.landmark[16].y>landmarks.landmark[15].y and landmarks.landmark[16].y<landmarks.landmark[13].y):
+    recognizedHandGesture = "GRAB"
+  
 
   print("Thumb : "+str(thumbState))
   print ("Index : "+str(indexFingerState))
@@ -190,64 +194,132 @@ def isSliding(landmarks,memo):
 
     actualPosition_x = landmarks.landmark[0].x
     actualPosition_y = landmarks.landmark[0].y
-    actualPosition_z = landmarks.landmark[0].z
+    actualPosition_x2 = landmarks.landmark[5].x
+    actualPosition_y2 = landmarks.landmark[5].y
+    
 
-    print ("x is", actualPosition_x)
+    
 
     if memo == None:
-        memo=[landmarks.landmark[0].x,landmarks.landmark[0].y,landmarks.landmark[0].z]
+        memo=[landmarks.landmark[0].x,landmarks.landmark[0].y,landmarks.landmark[5].x,landmarks.landmark[5].y]
 
-    lastPosition_x,lastPosition_y,lastPosition_z = memo[0],memo[1],memo[2]
+    lastPosition_x,lastPosition_y,lastPosition_x2,lastPosition_y2 = memo[0],memo[1],memo[2],memo[3]
 
     slide = ""
 
+    last_distance= math.sqrt((lastPosition_x2-lastPosition_x)**2+(lastPosition_y2-lastPosition_y)**2)
+    actual_distance= math.sqrt((actualPosition_x2-actualPosition_x2)**2+(actualPosition_y2-actualPosition_y)**2)
 
-    # if actualPosition_z - lastPosition_z > 0.000007:
+    print("distances :",last_distance-actual_distance)
+
+    # if last_distance-actual_distance > 0.003:
     #     slide = "ZOOM OUT"
-    # elif actualPosition_z - lastPosition_z < -0.000007:
+    # if last_distance - actual_distance < -0.001:
     #     slide = "ZOOM IN"
     if actualPosition_x - lastPosition_x > 0.005:
         slide = "RIGHT SLIDE"
-    elif actualPosition_x - lastPosition_x < -0.005:
+    if actualPosition_x - lastPosition_x < -0.005:
         slide = "LEFT SLIDE"
-    elif actualPosition_y - lastPosition_y > 0.005:
+    if actualPosition_y - lastPosition_y > 0.005:
         slide = "DOWN SLIDE"
-    elif actualPosition_y - lastPosition_y < -0.005:
+    if actualPosition_y - lastPosition_y < -0.005:
         slide = "UP SLIDE"
 
     if slide == "":
-        memory=[lastPosition_x,lastPosition_y,lastPosition_z]
+        memory=[lastPosition_x,lastPosition_y,lastPosition_x2,lastPosition_y2]
 
     else :
-        memory= [actualPosition_x, actualPosition_y,actualPosition_z]
+        memory= [actualPosition_x, actualPosition_y,actualPosition_x2,actualPosition_y2]
 
     return [slide,memory]
 
-def getStructuredLandmarks(landmarks):
-  structuredLandmarks = []
-  for j in range(42):
-    if( j %2 == 1):
-      structuredLandmarks.append({ 'x': landmarks[j - 1], 'y': landmarks[j] })
-  return structuredLandmarks
-
-#recognizedHandGesture = recognizeHandGesture(getStructuredLandmarks(test_landmarks_data))
-#print("recognized hand gesture: ", recognizedHandGesture) # print: "recognized hand gesture: 5"
 
 def addToQueueAndAverage(d, image):
-
+    global theta
     d.append(image)
+    counter = Counter(d)
+    best = counter.most_common(3)
+    
+    
+    if len(best)>2:
 
-    #print("queue", d)
-    #print ("len", len(d))
-    if len(d) == 10:
-      #print ("getting rid of ", d.popleft())
-      try:
-        #print ("average: ", mode(d))
-        return(mode(d))
-      except:
-        return('')
+      if best[0][0]=="":                    #Traitement des moments ou l'on bouge pas
+        best.remove(best[0])
+      elif best[1][0]=="":
+        best.remove(best[1])
+
+      if best[0][0]=="UP SLIDE" or best[0][0]=="DOWN SLIDE":
+        best[0],best[1]=best[1],best[0]
+      
+      if best[0][0]=="LEFT SLIDE":
+
+        if best[1][0]=="UP SLIDE":
+          theta=((best[1][1]/(best[0][1]+best[1][1]))*(math.pi/2))+math.pi/2
+        elif best[1][0]=="DOWN SLIDE":
+          theta=((best[0][1]/(best[0][1]+best[1][1]))*(math.pi/2))+math.pi
+      
+      if best[0][0]=="RIGHT SLIDE":
+
+        if best[1][0]=="UP SLIDE":
+          theta=((best[0][1]/(best[0][1]+best[1][1]))*(math.pi/2))
+        elif best[1][0]=="DOWN SLIDE":
+          theta=((best[1][1]/(best[0][1]+best[1][1]))*(math.pi/2))+math.pi*(3/2)
+
+    elif len(best)==2:
+      if best[0][0]=="":                    #Traitement des moments ou l'on bouge pas
+        best.remove(best[0])
+      elif best[1][0]=="":
+        best.remove(best[1])
+      
+      if best[0][0]=="RIGHT SLIDE":
+        theta=0
+      elif best[0][0]=="UP SLIDE":
+        theta=math.pi/2
+      elif best[0][0]=="LEFT SLIDE":
+        theta=math.pi
+      elif best[0][0]=="DOWN SLIDE":
+        theta=math.pi*(3/2)
+
     else:
-      return('')
+      if best[0][0]=="RIGHT SLIDE":
+        theta=0
+      elif best[0][0]=="UP SLIDE":
+        theta=math.pi/2
+      elif best[0][0]=="LEFT SLIDE":
+        theta=math.pi
+      elif best[0][0]=="DOWN SLIDE":
+        theta=math.pi*(3/2)
+
+      
+
+
+    if len(d) == precision:
+      
+      try:
+        
+        rep = mode(d)
+        if (rep !=""):
+
+          numberOfRep = d.count(rep)
+          speed=numberOfRep/precision          #Speed value beetween 0-1
+
+          return([rep,speed,theta])
+
+        else:
+
+          if  d.count(rep) <= precision*0.80  :
+            a = list(filter(lambda a: a != "", d))
+            rep2 = mode(a)
+            numberOfRep2 = a.count(rep2)
+
+            return([rep2,numberOfRep2/precision,theta])
+
+          else:
+            return(['',0,theta])
+      except:
+        return(['',0,theta])
+    else:
+      return(['',0,theta])
 
 def execute():
     print("execute")
@@ -287,7 +359,7 @@ def execute():
         image_signal = recognizeHandGesture(results.multi_hand_landmarks[0])
         video_signal = addToQueueAndAverage(d_signal, image_signal)
         #print("video_signal: ", video_signal)
-        text = video_signal
+        text = str(id)+str(video_signal[0])
         handsignal_publisher.publish(text)
 
         #Get Slide: should be based on pose with goTo().
@@ -297,15 +369,20 @@ def execute():
         #print("video_slide: ", video_slide)
         #handslide = String()
 
-        text2 = video_slide
+        text2 = str(id)+ str(video_slide[0])
+        speed = str(id) + "V" +str(video_slide[1])
+        theta = str(id) + "A" +str(video_slide[2])
+
+        print("THEEEEEEEEEEEEEEEETA: ",theta)
+
         handsignal_publisher.publish(text2)
+        handsignal_publisher.publish(speed)
 
+        cv2.putText(image, text[1:], (0,30), font, 1, (0, 0, 255), 2, cv2.LINE_4)
 
-        print("z : "+str(results.multi_hand_landmarks[0].landmark[0].z))
-
-        cv2.putText(image, text, (360,360), font, 1, (0, 0, 255), 2, cv2.LINE_4)
-
-        cv2.putText(image, text2, (360,460), font, 1, (0, 0, 255), 2, cv2.LINE_4)
+        cv2.putText(image, text2[1:], (0,60), font, 1, (0, 0, 255), 2, cv2.LINE_4)
+        cv2.putText(image, "Speed :"+speed[2:], (0,90), font, 1, (0, 0, 255), 2, cv2.LINE_4)
+        cv2.putText(image, "Theta :"+theta[2:], (0,120), font, 1, (0, 0, 255), 2, cv2.LINE_4)
 
 
         #if text == 'SPIDERMAN':
@@ -326,12 +403,15 @@ if __name__ == '__main__':
     try:
         #Testing our function
         rospy.init_node('hand', anonymous=True)
-        handsignal_publisher = rospy.Publisher('/hand/signal', String, queue_size=10)
-        handslide_publisher = rospy.Publisher('/hand/direction', String, queue_size=10)
-        handforward_publisher = rospy.Publisher('/hand/forward', String, queue_size=10)
-        global d_signal, d_slide, trigger
-        d_signal = deque([], 10)
-        d_slide = deque([], 10)
+        handsignal_publisher = rospy.Publisher('/cf2/signal', String, queue_size=10)
+        #handspeed_publisher = rospy.Publisher('/cf2/speed', String, queue_size=10)
+        #handforward_publisher = rospy.Publisher('/hand/forward', String, queue_size=10)
+        global d_signal, d_slide, trigger, precision, id, theta
+        id = 2
+        precision = 20              #we can have several precision for the speed
+        theta=0
+        d_signal = deque([], precision)
+        d_slide = deque([], precision)
         trigger = []
         execute()
 

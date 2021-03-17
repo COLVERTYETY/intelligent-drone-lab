@@ -11,6 +11,7 @@
       optitrack_client_name: "10.1.0.2"
       # qualisys_host_name: "10.0.5.219"
       optitrack_base_port: "1511"
+      # optitrack_base_port: "1510"
       # vrpn_host_name: "vicon"
     </rosparam>
   </node>

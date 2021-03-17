@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>  
+
+
+  <!-- GOOO STATE MACHINE -->
+  <node name="smach_viewer" pkg="smach_viewer" type="smach_viewer.py"/>
+
+  <!-- SMACH_VIEWER TO INTROSPECT STATE MACHINE -->
+  <node name="drone_smach" pkg="crazyswarm" type="3_drones_demo_centralize.py"/>
+</launch>
