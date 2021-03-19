@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+###############
+#modified by bubulle for the demo
+#changed few things to make it more stable
+#topics names are differents
+
 import logging
 from pynput import keyboard
 
@@ -23,9 +28,13 @@ engine = pyttsx3.init()
 Z = 0.3
 sleepRate = 30
 
+#CTRL C
 def signal_handler(signal, frame):
+	allcfs.crazyflies[0].land(0.04, 2.5)
 	sys.exit(0)
 
+#to have voice saying directions during flight
+#currently not used
 def speak(engine, text):
     
 
@@ -43,14 +52,14 @@ class GestureDrone:
         #self.cf = cf
         self.cf = cf
         print(cf)
-        self.velocity = 0.2
-        self.velocity2 = 0.3
-        self.ang_velocity = 120
+        self.velocity_normal = 0.2
+        self.velocity_slide = 0.3
+#         self.ang_velocity = 120
         self.takeoff_height = 0.5
 
-        self.sleeptime = 0.5
+#         self.sleeptime = 0.5
         self.msg= ''
-        self.goToDuration=1.0
+#         self.goToDuration=1.0
         self.followMode=False
         #self.max_hight = 0.8
         #self.hight = 0.0
@@ -69,7 +78,7 @@ class GestureDrone:
         self.listener()
 
 
-    def cf2_callback(self, msg):
+    def hand_callback(self, msg):
         print(msg.data)
         #cf3 = self.cf3
         
@@ -110,27 +119,27 @@ class GestureDrone:
                 
             if msg.data == 'THUMBDOWN':#start_up
                 #print(".")
-                self.cf.land(0.05, duration=1.0)
+                self.cf.land(0.04, 2.5)
 
 
             if msg.data == 'UP':#start_up
                 #print(".")
-                self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity_normal]), yawRate=0)
                 #rospy.sleep()
 
             if msg.data == 'DOWN': #start_down
                 #print(".")
-                self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity_normal]), yawRate=0)
                 #rospy.sleep()
 
             if msg.data == 'RIGHT': #start_right
                 #print(".")
-                self.cf.cmdVelocityWorld(np.array([-self.velocity, 0, 0]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([-self.velocity_normal, 0, 0]), yawRate=0)
                 #rospy.sleep()
 
             if msg.data == 'LEFT': #start_right
                 #print(".")
-                self.cf.cmdVelocityWorld(np.array([self.velocity, 0, 0]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([self.velocity_normal, 0, 0]), yawRate=0)
                 #rospy.sleep()
 
             # if signal == 'c': #start_down
@@ -163,7 +172,7 @@ class GestureDrone:
 
             
             if msg.data == 'RIGHT SLIDE' :#start_right
-                self.cf.cmdVelocityWorld(np.array([-self.velocity2, 0, 0]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([-self.velocity_slide, 0, 0]), yawRate=0)
                 print("slide right, follow.")
                 #pos = self.cf.position() + np.array([0, -0.05, 0])
                 #self.cf.goTo(pos, yawRate=0)
@@ -172,19 +181,19 @@ class GestureDrone:
 
             if msg.data == 'LEFT SLIDE' :#start_left
                 print("slide left")
-                self.cf.cmdVelocityWorld(np.array([self.velocity2, 0, 0]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([self.velocity_slide, 0, 0]), yawRate=0)
                 #pos = self.cf.position() + np.array([0, self.velocity, 0])                
                 #self.cf.goTo(np.array([0, self.velocity, 0]), yawRate=0)
             
             if msg.data == 'UP SLIDE': #start_up
                 print("slide up")
                 #pos = self.cf.position() + np.array([0, 0, self.velocity])               
-                self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity2]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity_slide]), yawRate=0)
                 
             if msg.data == 'DOWN SLIDE': #start_down
                 print("slide down")
                 #pos = self.cf.position() + np.array([0, 0, -self.velocity])
-                self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity2]), yawRate=0)
+                self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity_slide]), yawRate=0)
                 #self.cf.land(0.05, duration=1.0)
 
             #if msg.data == 'FIST' or msg.data == '':
@@ -216,11 +225,16 @@ class GestureDrone:
         else:
             return('')
 
+    def velocity_callback(self, msg):
+	self.velocity_normal = 0.3 * msg.data
+	self.velocity_slide = 0.2 * msg.data
+
     def listener(self):
         #rospy.init_node('drone_RTcommands', anonymous=True)
         print("I began listening")
-        handsignal_subscriber = rospy.Subscriber('/hand_signal', String, self.cf2_callback)
-        print("I'm listening")
+        handsignal_subscriber = rospy.Subscriber('/hand_signal', String, self.hand_callback)
+        print("I'm listening to hand signal")
+	velocity_subscriber = rsopy.Subscriber('security_speed', Float64MultiArray, self.velocity_callback)
         #handsignal_subscriber = rospy.Subscriber('/cf3/signal2', String, self.cf3_callback)
 
         #handslide_subscriber = rospy.Subscriber('/hand/direction', String, self.slide_callback)
@@ -239,6 +253,7 @@ if __name__ == '__main__':
 
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
+    global allcfs
     allcfs = swarm.allcfs
 
     #drone = KeyboardDrone(allcfs.crazyflies[0])
