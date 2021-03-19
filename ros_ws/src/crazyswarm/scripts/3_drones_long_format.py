@@ -19,7 +19,7 @@ import turtle_actionlib.msg
 import sys
 
 def polygonial():
-    ids = [5, 2, 3]
+    ids = [2, 5, 1]
     #define the differents points
     test_point= Point()
     test_point.x = 0

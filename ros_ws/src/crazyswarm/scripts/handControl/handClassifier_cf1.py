@@ -341,7 +341,7 @@ if __name__ == '__main__':
     try:
         #Testing our function
         rospy.init_node('hand', anonymous=True)
-        handsignal_publisher = rospy.Publisher('/cf2/signal', String, queue_size=10)
+        handsignal_publisher = rospy.Publisher('/hand_signal', String, queue_size=10)
         #handspeed_publisher = rospy.Publisher('/cf2/speed', String, queue_size=10)
         #handforward_publisher = rospy.Publisher('/hand/forward', String, queue_size=10)
         global d_signal, d_slide, trigger, precision, id
