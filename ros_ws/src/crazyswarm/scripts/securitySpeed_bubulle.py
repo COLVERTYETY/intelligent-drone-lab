@@ -1,5 +1,7 @@
 ################
-#security 
+#security speed bubulle
+#original work from adem and txa
+#added for loops to not repeat the same code 6 times
 
 
 import math as m
@@ -52,7 +54,8 @@ def cf_callback(data):
         z[cf.child_frame_id]=cf.transform.translation.z
 
         #calculate the speed according to the position in the arena
-        securitySpeed[cf.child_frame_id] = sigmoid(18*((1-distance_ellipsoid(x[cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id]))-0.3))
+#         securitySpeed[cf.child_frame_id] = sigmoid(18*((1-distance_ellipsoid(x[cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id]))-0.3))
+        securitySpeed[cf.child_frame_id] = sigmoid(distance_ellipsoid(x[cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id]))
 
         #print for debug
         print(str(cf.child_frame_id) + ' ' + str(distance_ellipsoid(x[cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id])))
@@ -64,7 +67,8 @@ def cf_callback(data):
                     print(str(cf.child_frame_id) + 'slowing down')
                     # securitySpeed[cf.child_frame_id] = 0.2
                     # securitySpeed = sigmoid(18*((1-distance_ellipsoidx([cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id]))-0.3))
-                    securitySpeed[cf.child_frame_id] = sigmoid(distance_ellipsoid(x[cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id]))
+#                     securitySpeed[cf.child_frame_id] = sigmoid(distance_ellipsoid(x[cf.child_frame_id],y[cf.child_frame_id],z[cf.child_frame_id]))
+                    securitySpeed[cf.child_frame_id] = sigmoid(closeness(x[cf.child_frame_id], y[cf.child_frame_id], z[cf.child_frame_id], x[drone], y[drone], z[drone]))
                     print(securitySpeed[cf.child_frame_id])
 
 
@@ -77,10 +81,10 @@ def cf_callback(data):
 
 
 if __name__ == '__main__':
-    x = {}
-    y = {}
-    z = {}
-    securitySpeed = {}
+#     x = {}
+#     y = {}
+#     z = {}
+#     securitySpeed = {}
 
     # all_drones = ['cf1', 'cf2', 'cf3', 'cf4', 'cf5', 'cf6']
     for drone in all_drones:
@@ -98,6 +102,6 @@ if __name__ == '__main__':
 
     rospy.init_node('security', anonymous=True)
 
-    securitySpeed_publisher = rospy.Publisher('/cf2/filtredsignal', Float64MultiArray, queue_size=10)
+    securitySpeed_publisher = rospy.Publisher('/security_speed', Float64MultiArray, queue_size=10)
     cf2_subscriber = rospy.Subscriber('/tf', TFMessage, cf_callback)
     rospy.spin()
