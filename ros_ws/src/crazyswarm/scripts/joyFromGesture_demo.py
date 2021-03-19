@@ -25,8 +25,15 @@ import pyttsx3
 global engine 
 engine = pyttsx3.init()
 
-Z = 0.3
-sleepRate = 30
+# Z = 0.3
+# sleepRate = 30
+velocity_normal = 0.2
+velocity_slide = 0.3
+takeoff_height = 0.5
+msg= ''
+followMode=False
+
+signal.signal(signal.SIGINT, signal_handler)
 
 #CTRL C
 def signal_handler(signal, frame):
@@ -36,34 +43,11 @@ def signal_handler(signal, frame):
 #to have voice saying directions during flight
 #currently not used
 def speak(engine, text):
-    
-
-    # tts = gTTS(text=text, lang="en")
-    # filename = "voice.mp3"
-    # tts.save(filename)
-    # playsound.playsound(filename)
     engine.say(text)
     engine.runAndWait()
 
-class GestureDrone:
-
-    def __init__(self, cf):
-        #speak (engine, "Hand control mode activated.")
-        #self.cf = cf
-        self.cf = cf
-        print(cf)
-        self.velocity_normal = 0.2
-        self.velocity_slide = 0.3
-#         self.ang_velocity = 120
-        self.takeoff_height = 0.5
-
-#         self.sleeptime = 0.5
-        self.msg= ''
-#         self.goToDuration=1.0
-        self.followMode=False
-        #self.max_hight = 0.8
-        #self.hight = 0.0
-        print ('SPIDERMAN to take off!')
+def print_commands():
+	print ('SPIDERMAN to take off!')
         print ('THUMBDOWN to land!')
         print ('UP to move up!')
         print ('DOWN to move down!')
@@ -71,203 +55,105 @@ class GestureDrone:
         print ('LEFT to move left!')
         print ('FIST emergency STOP')
         print('PEACE to go on follow mode')
-        #self.cf2.takeoff(targetHeight=self.takeoff_height, duration=3.0)
-        self.cf.takeoff(targetHeight=self.takeoff_height, duration=3.0)
-        print('I took off')
-        
-        self.listener()
-
-
-    def hand_callback(self, msg):
-        print(msg.data)
-        #cf3 = self.cf3
-        
-        # while abs(self.cf.position()[0])>1.0 or abs(self.cf.position()[1])>1.0 or abs(self.cf.position()[0])>1.0:
-        #     print ("go home now")
-
-        #print (self.cf.position())
-        if msg.data == 'PEACE' and not self.followMode: #Activate followMODE
-            #speak (engine, "Activating Hand following mode.")
-            #print ("followMode ACTIVATED")
-            self.followMode=True
-
-        if msg.data == 'INDEX' and self.followMode: #Activate SignalMode: 
-            #speak (engine, "Activating signal mode.")
-            #Deactivate followMODE
-            #print ("SignalMode ACTIVATED")
-            self.followMode=False
-
-        #print ("FollowMODE is", self.followMode)
-        
-        #if self.followMode==False:
-            # if signal == 'w': #start_forward
-            #     self.cf.cmdVelocityWorld(np.array([self.velocity, 0, 0]), yawRate=0)
-            # if msg.data == 'THREE' :#start_back
-            #     self.cf.cmdVelocityWorld(np.array([-self.velocity, 0, 0]), yawRate=0)
-
-            # if msg.data == 'TWO': #start_forward
-            #     self.cf.cmdVelocityWorld(np.array([self.velocity, 0, 0]), yawRate=0)
-
-
-        if self.followMode == False :
-
-
-            if msg.data == 'SPIDERMAN':#start_up
-                #print("signalmode, spiderman.")
-                self.cf.takeoff(targetHeight=self.takeoff_height, duration=3.0)
-
-                
-            if msg.data == 'THUMBDOWN':#start_up
-                #print(".")
-                self.cf.land(0.04, 2.5)
-
-
-            if msg.data == 'UP':#start_up
-                #print(".")
-                self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity_normal]), yawRate=0)
-                #rospy.sleep()
-
-            if msg.data == 'DOWN': #start_down
-                #print(".")
-                self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity_normal]), yawRate=0)
-                #rospy.sleep()
-
-            if msg.data == 'RIGHT': #start_right
-                #print(".")
-                self.cf.cmdVelocityWorld(np.array([-self.velocity_normal, 0, 0]), yawRate=0)
-                #rospy.sleep()
-
-            if msg.data == 'LEFT': #start_right
-                #print(".")
-                self.cf.cmdVelocityWorld(np.array([self.velocity_normal, 0, 0]), yawRate=0)
-                #rospy.sleep()
-
-            # if signal == 'c': #start_down
-            #     self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity]), yawRate=0)
-            # if signal == 'z': #start_up
-            #     self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity]), yawRate=0)
-            if (msg.data == '' or msg.data == 'UNKNOWN' or msg.data == 'FIST'):
-                print(".")
-                #self.cf.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
-                
-
-                    #if key.char == 'q':
-                    #    self.cf.start_turn_left(self.ang_velocity)
-                    #if key.char == 'e':
-                    #    self.cf.start_turn_right(self.ang_velocity)
-
-                # def on_release (self, key):
-                #     self.cf.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
-
-                # def slide_callback(self, msg):
-                #     #print(msg.data)
-                #     #print (self.cf.position()[0])
-
-                #     new = self.addToQueueAndAverage(d_slide, msg.data)
-                #     #print("HI", new)
-
-
-        if self.followMode == True:
-            print("in FOLLOW mode")
-
-            
-            if msg.data == 'RIGHT SLIDE' :#start_right
-                self.cf.cmdVelocityWorld(np.array([-self.velocity_slide, 0, 0]), yawRate=0)
-                print("slide right, follow.")
-                #pos = self.cf.position() + np.array([0, -0.05, 0])
-                #self.cf.goTo(pos, yawRate=0)
-                #self.cf.goTo(np.array([0, self.velocity, 0]), yawRate=0)
-                #pos = self.cf.position() + np.array([0, -self.velocity, 0])
-
-            if msg.data == 'LEFT SLIDE' :#start_left
-                print("slide left")
-                self.cf.cmdVelocityWorld(np.array([self.velocity_slide, 0, 0]), yawRate=0)
-                #pos = self.cf.position() + np.array([0, self.velocity, 0])                
-                #self.cf.goTo(np.array([0, self.velocity, 0]), yawRate=0)
-            
-            if msg.data == 'UP SLIDE': #start_up
-                print("slide up")
-                #pos = self.cf.position() + np.array([0, 0, self.velocity])               
-                self.cf.cmdVelocityWorld(np.array([0, 0, self.velocity_slide]), yawRate=0)
-                
-            if msg.data == 'DOWN SLIDE': #start_down
-                print("slide down")
-                #pos = self.cf.position() + np.array([0, 0, -self.velocity])
-                self.cf.cmdVelocityWorld(np.array([0, 0, -self.velocity_slide]), yawRate=0)
-                #self.cf.land(0.05, duration=1.0)
-
-            #if msg.data == 'FIST' or msg.data == '':
-                #print("stop")
-                #self.cf.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
-                #pos = self.cf.position() + np.array([0, 0, 0])
-
-            #else:
-                #self.cf.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
-
-                #pos = self.cf.position()
-
-
-
-            #self.cf.goTo(pos, yaw=0, duration=self.goToDuration)
-
-
-
-    def addToQueueAndAverage(self, d, image):
-        d.append(image)
-        print("queue", d)
-        #print ("len", len(d))
-        if len(d) == 10:
-        #print ("getting rid of ", d.popleft())
-            try:
-                return(mode(d))
-            except:
-                return('')
-        else:
-            return('')
-
-    def velocity_callback(self, msg):
-	self.velocity_normal = 0.3 * msg.data
-	self.velocity_slide = 0.2 * msg.data
-
-    def listener(self):
-        #rospy.init_node('drone_RTcommands', anonymous=True)
+	
+def start():
+	print(cf)
+	print_commands()
+	cf.takeoff(targetHeight=self.takeoff_height, duration=3.0)
+	print('I took off')
+	
+	
         print("I began listening")
-        handsignal_subscriber = rospy.Subscriber('/hand_signal', String, self.hand_callback)
+        handsignal_subscriber = rospy.Subscriber('/hand_signal', String, hand_callback)
         print("I'm listening to hand signal")
-	velocity_subscriber = rsopy.Subscriber('security_speed', Float64MultiArray, self.velocity_callback)
-        #handsignal_subscriber = rospy.Subscriber('/cf3/signal2', String, self.cf3_callback)
-
-        #handslide_subscriber = rospy.Subscriber('/hand/direction', String, self.slide_callback)
-
-        #cf.cmdVelocityWorld(np.array([self.velocity, 0, 0]), yawRate=0)
+	velocity_subscriber = rospy.Subscriber('security_speed', Float64MultiArray, velocity_callback)
+	print('listening !')
         
         rospy.spin()
 
+def drone_normal_mode(data):
+        if data == 'SPIDERMAN':
+                #print("signalmode, spiderman.")
+                cf.takeoff(targetHeight=takeoff_height, duration=3.0)
 
-signal.signal(signal.SIGINT, signal_handler)
+        if data == 'THUMBDOWN':
+                #print(".")
+                cf.land(0.04, 2.5)
+
+        if data == 'UP':
+                #print(".")
+                cf.cmdVelocityWorld(np.array([0, 0, velocity_normal]), yawRate=0)
+                #rospy.sleep()
+
+        if data == 'DOWN': 
+                #print(".")
+                cf.cmdVelocityWorld(np.array([0, 0, -velocity_normal]), yawRate=0)
+                #rospy.sleep()
+
+        if data == 'RIGHT': 
+                #print(".")
+                cf.cmdVelocityWorld(np.array([-velocity_normal, 0, 0]), yawRate=0)
+                #rospy.sleep()
+
+        if data == 'LEFT': 
+                #print(".")
+                cf.cmdVelocityWorld(np.array([velocity_normal, 0, 0]), yawRate=0)
+                #rospy.sleep()
+
+        if data == '' or data == 'UNKNOWN' or data == 'FIST':
+                print(".")
+		#test with this line later ?
+                #self.cf.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
+		
+def drone_follow_mode(data):
+	if data == 'RIGHT SLIDE' :#start_right
+                cf.cmdVelocityWorld(np.array([-velocity_slide, 0, 0]), yawRate=0)
+                print("slide right, follow.")
+
+        if data == 'LEFT SLIDE' :#start_left
+                print("slide left")
+                cf.cmdVelocityWorld(np.array([self.velocity_slide, 0, 0]), yawRate=0)
+            
+        if data == 'UP SLIDE': #start_up
+                print("slide up")       
+                cf.cmdVelocityWorld(np.array([0, 0, self.velocity_slide]), yawRate=0)
+                
+        if data == 'DOWN SLIDE': #start_down
+                print("slide down")
+                cf.cmdVelocityWorld(np.array([0, 0, -self.velocity_slide]), yawRate=0)
+
+                
+
+def hand_callback(msg):
+        print(msg.data)
+	
+        if msg.data == 'PEACE' and not followMode: #Activate followMODE
+		#speak (engine, "Activating Hand following mode.")
+		#print ("followMode ACTIVATED")
+		followMode=True
+
+        if msg.data == 'INDEX' and followMode: #Activate SignalMode: 
+		#speak (engine, "Activating signal mode.")
+		#Deactivate followMODE
+		#print ("SignalMode ACTIVATED")
+		self.followMode=False
+
+        if self.followMode == False :
+		drone_normal_mode(msg.data)
+
+        if self.followMode == True:
+		print("in FOLLOW mode")
+		drone_follow_mode(msg.data)
+
+def velocity_callback(self, msg):
+	self.velocity_normal = 0.3 * msg.data
+	self.velocity_slide = 0.2 * msg.data
+
 
 if __name__ == '__main__':
-
-    global d_slide
-    d_slide = deque([], 10)
-
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     global allcfs
     allcfs = swarm.allcfs
-
-    #drone = KeyboardDrone(allcfs.crazyflies[0])
-    #with keyboard.Listener(on_press=drone.on_press, on_release=drone.on_release) as listener:
-    #     listener.join()
-    drone = GestureDrone(allcfs.crazyflies[0])
-
-    #try:
-        #Testing our function
-        #rospy.init_node('drone_RTcommands', anonymous=True)
-        #handsignal_subscriber = rospy.Subscriber('/hand/signal', String, signal_callback())
-        #handslide_subscriber = rospy.Publisher('/hand/direction', String, queue_size=10)
-        #handforward_publisher = rospy.Publisher('/hand/forward', String, queue_size=10)
-
-    #    execute()
-
-    #except rospy.ROSInterruptException: pass
+    cf = allcfs.crazyflies[0]
+    start()
